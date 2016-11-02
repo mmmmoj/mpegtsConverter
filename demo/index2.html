@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<head>
+    <title>HLS converter and player demo</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="shim/console.worker.js"></script>
+    <script src="shim/console.time.js"></script>
+    <script src="../dist/blobConverter.js"></script>
+    <!--<script src="../dist/blobConverter.min.js"></script>-->
+
+</head>
+<body style="text-align: center">
+
+
+<video id="canvas" controls autoplay></video>
+<div id="m3u8-list"></div>
+
+
+<script>
+    var mojFetchText = function (blob, cb) {
+        var reader = new FileReader();
+        reader.onload = function (event) {
+            if (cb) cb(reader.result);
+        };
+        reader.readAsText(blob);
+    };
+
+    var mojToArrayBuffer = function (blob, callback) {
+        var reader = new window.FileReader();
+        reader.onload = (function () {
+            return function (e) {
+                if (callback)
+                    callback(new Uint8Array(e.target.result));
+            };
+        })(blob);
+        reader.readAsArrayBuffer(blob);
+    };
+
+    var parseArguments = function (text) {
+        text = text.replace(/\s+/g, ' ');
+        var args = [];
+        // Allow double quotes to not split args.
+        text.split('"').forEach(function (t, i) {
+            t = t.trim();
+            if ((i % 2) === 1) {
+                args.push(t);
+            } else {
+                args = args.concat(t.split(" "));
+            }
+        });
+        return args;
+    };
+
+    var arrayBuffer;
+    function retrieveSampleVideo(url) {
+        var oReq = new XMLHttpRequest();
+        oReq.open("GET", url, true);
+        oReq.responseType = "arraybuffer";
+
+        oReq.onload = function (oEvent) {
+            var ab = oReq.response;
+            if (ab) {
+                arrayBuffer = new Uint8Array(ab);
+            }
+        };
+
+        oReq.send(null);
+    };
+    var isWorkerLoaded = false; // wait for loading library
+    var video = document.getElementById('canvas');
+    var list = document.getElementById('m3u8-list');
+    var arg = parseArguments('-i test.ts -vf showinfo -strict -2 -s 320x240 -c:v libx264 output.mp4');
+//    var arg = parseArguments('-t 3 -i test.ts -vcodec copy -acodec copy output.mp4');
+
+    var startTime = Date.now();
+
+    var options = {
+        input: 'http://image1.dianfuketang.com/user/M00/03/54/PaDqM1c0FU-ABxxkAAApKOMKEAI50.m3u8',
+        output: '/',
+        concurrency: 5,
+        decrypt: true,
+        startSegment: 55
+    };
+
+    blobFetcher(options, function (str) {
+        var blob = new Blob([str[0]], {type: 'plain/text'});
+        mojFetchText(blob, function (txt) {
+            list.innerHTML = txt;
+        });
+
+       var Allblob = new Blob(str.slice(1),{type:'video/MP2T'});
+        // var Allblob = new Blob([str[1]],{type:'video/MP2T'});
+
+//        var url = window.URL.createObjectURL(Allblob);
+//        retrieveSampleVideo(url);
+//        isWorkerLoaded = true;
+//        console.log('not ready');
+////        var worker = new Worker('worker.js');
+//        var worker = new Worker('worker-asm.js');
+////        worker.postMessage({type: 'convert', src: str[1],index:1}); // be advised that str[0] is containing the m3u8 file, so you can use it
+////        worker.postMessage({type: 'convert', src: str[1],index:1}); // be advised that str[0] is containing the m3u8 file, so you can use it
+//        worker.addEventListener('message', function (event) {
+//            var data = event.data, descriptor = '#' + data.index + ': ' + data.original;
+//            switch (data.type) {
+//                case 'ready':
+//                    if(isWorkerLoaded === true){
+//                        worker.postMessage({
+//                            type: "command",
+//                            arguments: arg,
+//                            files: [
+//                                {
+//                                    "name": "test.ts",
+//                                    "data": arrayBuffer
+//                                }
+//                            ]
+//                        });
+//                    } else{
+//                        isWorkerLoaded = true;
+//                    }
+//                    console.log('I am ready ....');
+//                    break;
+//                case 'segment':
+//                    console.log('segment #' + data.seg + ' was finished');
+//                    video.src = data.url;
+//                    video.load();
+//                    break;
+//                case 'error':
+//                    console.log('segment #' + data.seg + ' has error');
+//                    break;
+//                case 'finished':
+//                    console.log('finished');
+////                    var blob = new Blob([data.ab], {type: 'video/mp4'});
+////                    var url = URL.createObjectURL(blob);
+////                    video.src = data.url;
+////                    video.load();
+//                    break;
+//                case 'done':
+//                    console.log('finished in ' + data.time + ' ms');
+//                    var buffers = data.data;
+//                    buffers.forEach(function(file) {
+////                        getDownloadLink(file.data, file.name);
+//                        var blob = new Blob([file.data],{type:'video/mp4'});
+//                        var src = window.URL.createObjectURL(blob);
+//                        video.src = src;
+//                        console.log(src);
+//                    });
+//            }
+//            goNext(data.seg + 1);
+//            function goNext(ind) {
+//                if (ind < str.length)
+//                    worker.postMessage({type: 'convert', src: str[ind], index: ind});
+//            }
+//        });
+
+    }, function (percentage, seg, i, totalSegments,speed,fname) { // show progress
+        console.log('percentage: ' + percentage + "% , finished segment #" + i + " from $" + totalSegments + ' speed ' + speed + ' file name ' + fname);
+    }, function(speed){
+//        console.log('speed ' + speed);
+    },function (err) { // when error happen
+        console.log(err);
+    });
+</script>
+</body>
+</html>

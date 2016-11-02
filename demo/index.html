@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<head>
+    <title>HLS converter and player demo</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="shim/console.worker.js"></script>
+    <script src="shim/console.time.js"></script>
+    <script src="../dist/blobConverter.js"></script>
+    <!--<script src="../dist/blobConverter.min.js"></script>-->
+
+</head>
+<body style="text-align: center">
+
+
+<video id="canvas" controls autoplay></video>
+<div id="m3u8-list"></div>
+
+
+<script>
+    var mojFetchText = function (blob, cb) {
+        var reader = new FileReader();
+        reader.onload = function (event) {
+            var fTxt;
+            var list = reader.result.split('#');
+            var txt = list.find(function (arr) {
+                return arr.indexOf('EXT-X-KEY') > -1;
+            });
+            if(txt){
+                console.log(txt)
+                fTxt = reader.result.replace('#' + txt,'');
+            }
+            else{
+                fTxt = reader.result;
+            }
+            if (cb) cb(fTxt);
+        };
+        reader.readAsText(blob);
+    };
+
+    var mojToArrayBuffer = function (blob, callback) {
+        var reader = new window.FileReader();
+        reader.onload = (function () {
+            return function (e) {
+                if (callback)
+                    callback(new Uint8Array(e.target.result));
+            };
+        })(blob);
+        reader.readAsArrayBuffer(blob);
+    };
+
+    var parseArguments = function (text) {
+        text = text.replace(/\s+/g, ' ');
+        var args = [];
+        // Allow double quotes to not split args.
+        text.split('"').forEach(function (t, i) {
+            t = t.trim();
+            if ((i % 2) === 1) {
+                args.push(t);
+            } else {
+                args = args.concat(t.split(" "));
+            }
+        });
+        return args;
+    };
+
+    var arrayBuffer;
+    function retrieveSampleVideo(url) {
+        var oReq = new XMLHttpRequest();
+        oReq.open("GET", url, true);
+        oReq.responseType = "arraybuffer";
+
+        oReq.onload = function (oEvent) {
+            var ab = oReq.response;
+            if (ab) {
+                arrayBuffer = new Uint8Array(ab);
+            }
+        };
+
+        oReq.send(null);
+    }
+    ;
+    var isWorkerLoaded = false; // wait for loading library
+    var video = document.getElementById('canvas');
+    var list = document.getElementById('m3u8-list');
+
+    var startTime = Date.now();
+
+    var onFinish = function (str,seg) {
+//        console.log(seg);
+        var blob = new Blob([str[0]], {type: 'plain/text'});
+        mojFetchText(blob, function (txt) {
+//            txt.replace(new RegExp('.*' + key.uri + '.*'),'');
+            list.innerHTML = txt;
+        });
+
+        var Allblob = new Blob(str.slice(1), {type: 'video/MP2T'});
+    };
+    var onProgress = function (percentage, seg, i, totalSegments, speed, fname) { // show progress
+        console.log('percentage: ' + percentage + "% , finished segment #" + i + " from $" + totalSegments + ' speed ' + speed + ' file name ' + fname);
+    };
+    var onError = function (err) { // when error happen
+        console.log(err);
+    };
+
+    var finished = ['/53ad8f69459c78f29b136fe1f6a7e218_3_54.ts', '/53ad8f69459c78f29b136fe1f6a7e218_3_56.ts']
+
+    var options = {
+        input: 'http://image1.dianfuketang.com/user/M00/03/54/PaDqM1c0FU-ABxxkAAApKOMKEAI50.m3u8',
+        output: 'testuser0001',
+        concurrency: 10,
+        decrypt: true,
+//        finishedSegments: finished
+    };
+    var down = new blobFetcher(options,onFinish, onProgress, onError);
+    down.start();
+    setTimeout(function () {
+        down.pause();
+    },3000);
+    setTimeout(function () {
+        //down.start();
+    },5000);
+</script>
+</body>
+</html>

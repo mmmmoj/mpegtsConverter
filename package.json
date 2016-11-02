@@ -1,0 +1,42 @@
+{
+  "name": "mpegtsconverter",
+  "version": "1.0.0",
+  "description": "This library is used to download m3u8 segments and converted them into mp4 at the browser",
+  "main": "index.js",
+  "scripts": {
+    "clean": "rimraf dist/*",
+    "prebuild": "npm run clean",
+    "build": "./tools/mergejs src/list/blobconverter.txt dist/blobconverter.js && browserify src/downloader/index.js -s blobFetcher  > dist/blobfetcher.js && ./tools//mergejs src/list/final.txt dist/mpegtsConverter.js && npm run minify",
+    "minify": "uglifyjs dist/mpegtsConverter.js -c sequences=true,dead_code=true,conditionals=true,booleans=true,unused=true,if_return=true,join_vars=true,drop_console=true -m sort --screw-ie8 > dist/mpegtsConverter.min.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mmmmoj/mpegtsConverter.git"
+  },
+  "keywords": [
+    "m3u8",
+    "mp4",
+    "blob",
+    "browser",
+    "converter"
+  ],
+  "author": "Mojahed Mohamed",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mmmmoj/mpegtsConverter/issues"
+  },
+  "homepage": "https://github.com/mmmmoj/mpegtsConverter#readme",
+  "dependencies": {
+    "bluebird": "^3.4.6",
+    "jdataview": "^2.5.0",
+    "m3u8-parser": "^1.2.0",
+    "pkcs7": "^0.2.3"
+  },
+  "devDependencies": {
+    "browserify": "^13.0.0",
+    "browserify-derequire": "^0.9.4",
+    "browserify-versionify": "^1.0.6",
+    "uglify-js": "^2.4.23"
+  }
+}
