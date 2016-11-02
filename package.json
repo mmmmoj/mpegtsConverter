@@ -4,7 +4,7 @@
   "description": "This library is used to download m3u8 segments and converted them into mp4 at the browser",
   "main": "index.js",
   "scripts": {
-    "clean": "rimraf dist/*",
+    "clean": "rm dist/*",
     "prebuild": "npm run clean",
     "build": "./tools/mergejs src/list/blobconverter.txt dist/blobconverter.js && browserify src/downloader/index.js -s blobFetcher  > dist/blobfetcher.js && ./tools//mergejs src/list/final.txt dist/mpegtsConverter.js && npm run minify",
     "minify": "uglifyjs dist/mpegtsConverter.js -c sequences=true,dead_code=true,conditionals=true,booleans=true,unused=true,if_return=true,join_vars=true,drop_console=true -m sort --screw-ie8 > dist/mpegtsConverter.min.js",
